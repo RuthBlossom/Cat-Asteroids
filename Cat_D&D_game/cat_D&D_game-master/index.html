@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- jQuery library -->
+    <script src="vendor/jquery-1.11.1.js"></script>
+    <!-- Keymaster library for keyboard handling -->
+    <script src="vendor/keymaster.js"></script>
+    <!-- Game JavaScript files -->
+    <script src='lib/utils.js'></script>
+    <script src='lib/movingObject.js'></script>
+    <script src='lib/asteroid.js'></script>
+    <script src='lib/bullet.js'></script>
+    <script src='lib/game.js'></script>
+    <script src='lib/gameView.js'></script>
+    <script src='lib/ship.js'></script>
+    <script src='lib/highscores.js'></script>
+    <!-- Parse.js library for Parse backend integration -->
+    <script src="vendor/parse.min.js"></script>
+    <!-- CSS Framework -->
+    <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.5.0/pure-min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" type="text/css" href="styling.css">
+    <!-- Google Analytics -->
+    <script>
+			(function(i,s,o,g,r,a,m){
+				i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+					(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+					m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+			})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+			ga('create', 'UA-58939480-4', 'auto');
+			ga('send', 'pageview');
+    </script>
+</head>
+<body>
+<!-- Game Canvas -->
+<canvas id="game-canvas" width="900" height="550" style="background-image: url(./images/background1.jpg)"></canvas>
+
+<!-- Display Lives and Points -->
+<div id="lives">Number of Hit Points: <div id="number-of-lives">8</div></div>
+<div id="points">Points: <div id="number-of-points">0</div></div>
+
+<!-- Music Controls -->
+<div>
+    <div id="pause-music"><img src="./images/mute_audio.png"></div>
+    <div id="play-music"><img src="./images/play_audio.png"></div>
+</div>
+
+<!-- Welcome Screen -->
+<div id='welcome' class='visible'>
+    <div id="start-new-game">Start a new game</div>
+    <div id="visit-instructions">Read instructions</div>
+    <div id="visit-leadership-board">Go to highscores</div>
+    <div id="cat-gif"><img src="./images/white_cat.gif"></div>
+</div>
+
+<!-- Game Message -->
+<div id="message" class='hidden'></div>
+
+<!-- Leadership Board -->
+<div id="leadership-board" class='hidden'>
+    <p class="fame-title">Wall of Fame!</p><br>
+    <div id="best-scores"></div>
+    <div id="happy-cat"><img src="./images/happycat.gif"></div>
+    <div id="back-to-overview"><div class='home-icon'><img src="./images/home.png" /></div></div>
+</div>
+
+<!-- Instructions Page -->
+<div id="instructions" class='hidden'>
+    <p class="instructions-title">Instructions to play the game</p>
+    <p>Survive the mice attack by killing as many mice as possible and get your name in the hall of fame. Be aware, the mice are tough and have multiple lives.</p>
+    <div class="key">&#8592;</div>Turn left<br>
+    <div class="key">&#8594;</div>Turn right<br>
+    <div class="key">&#8593;</div>Accelerate<br>
+    <div class="key">&#8595;</div>Slow down<br>
+    <div class="key">spacebar</div>Cast fire bolts<br>
+    <div class="key">P</div>Pause the game<br>
+    <div class="key">U</div>Continue the game<br>
+    <div id="back-to-overview-from-instructions"><div class='home-icon'><img src="./images/home.png" /></div></div>
+</div>
+
+<!-- Game Over Screen -->
+<div id="game-over" class='hidden'>
+    <p class='game-over-title'>GAME OVER!</p>
+    You got <div id="final-score"> </div> points!<br><br>
+    Please add your name to the wall of fame!<br><br>
+    <input type="text" id="username"><br><br>
+    <button type="submit" id="add-score" class="pure-button">Give me eternal glory!</button>
+    <div id="back-to-overview-from-gameover"><div class='home-icon'><img src="./images/home.png" /></div></div>
+</div>
+
+<!-- Background Music -->
+<div id="background-music">
+    <audio loop="loop" autoplay="autoplay" controls="controls" id="music" hidden="true">
+        <source src="./images/music.mp3" />
+    </audio>
+</div>
+
+<!-- Restart Button -->
+<button id="restart-button" class="pure-button">Restart</button>
+
+<script>
+	// Initialize Parse with application keys
+	Parse.initialize("g8blYmmFoAI9p2LJtzuOVEiW7emy1dWsdqt8nEHQ", "rKwd1vdlANyEkdHl1SFiNk5zmZoeIlApjSQOkTQJ");
+
+	// Cache DOM elements
+	var welcome = document.getElementById('welcome');
+	var startGame = document.getElementById("start-new-game");
+	var visitLeaderBoard = document.getElementById("visit-leadership-board");
+	var leaderBoard = document.getElementById("leadership-board");
+	var submitScore = document.getElementById("add-score");
+	var gameOver = document.getElementById("game-over");
+	var player = document.getElementById("music");
+	var pauseMusic = document.getElementById("pause-music");
+	var playMusic = document.getElementById("play-music");
+	var backToStart = document.getElementById("back-to-overview");
+	var backToStartFromInstructions = document.getElementById("back-to-overview-from-instructions");
+	var backToStartFromGameOver = document.getElementById('back-to-overview-from-gameover');
+	var visitInstructions = document.getElementById('visit-instructions');
+	var instructions = document.getElementById('instructions');
+	var restartButton = document.getElementById('restart-button');
+
+	// Start Game Button Click Handler
+	startGame.onclick = function () {
+		var canvas = document.getElementById("game-canvas");
+		var gameView = new Asteroids.GameView(canvas);
+		$('#number-of-lives').html('8'); // Set hit points to 8 immediately
+		gameView.start();
+		$(welcome).removeClass('visible');
+		$(welcome).addClass('hidden');
+	};
+
+	// Pause Music Button Click Handler
+	pauseMusic.onclick = function () {
+		$('#play-music').show();
+		$('#pause-music').hide();
+		player.pause();
+	};
+
+	// Play Music Button Click Handler
+	playMusic.onclick = function () {
+		$('#play-music').hide();
+		$('#pause-music').show();
+		player.play();
+	};
+
+	// Back to Start Button Click Handler
+	backToStart.onclick = function () {
+		$(welcome).removeClass('hidden');
+		$(welcome).addClass('visible');
+		$(leaderBoard).removeClass('visible');
+		$(leaderBoard).addClass('hidden');
+	};
+
+	// Back to Start from Instructions Button Click Handler
+	backToStartFromInstructions.onclick = function () {
+		$(welcome).removeClass('hidden');
+		$(welcome).addClass('visible');
+		$(instructions).removeClass('visible');
+		$(instructions).addClass('hidden');
+	};
+
+	// Back to Start from Game Over Button Click Handler
+	backToStartFromGameOver.onclick = function () {
+		$(welcome).removeClass('hidden');
+		$(welcome).addClass('visible');
+		$(gameOver).removeClass('visible');
+		$(gameOver).addClass('hidden');
+		$('#username').val('');
+		$('#number-of-lives').html('8');
+		$('#number-of-points').html('0');
+	};
+
+	// Visit Leaderboard Button Click Handler
+	visitLeaderBoard.onclick = function () {
+		$(welcome).removeClass('visible');
+		$(welcome).addClass('hidden');
+		$(leaderBoard).removeClass('hidden');
+		$(leaderBoard).addClass('visible');
+		var highScores = new Asteroids.HighScores();
+		highScores.fetchScores();
+	};
+
+	// Visit Instructions Button Click Handler
+	visitInstructions.onclick = function () {
+		$(welcome).removeClass('visible');
+		$(welcome).addClass('hidden');
+		$(instructions).removeClass('hidden');
+		$(instructions).addClass('visible');
+	}
+
+	// Submit Score Button Click Handler
+	submitScore.onclick = function () {
+		var points = $('#final-score').html();
+		var username = $('#username').val();
+		$('#username').val('');
+		var score = new Asteroids.HighScores();
+		score.addScore(username, points);
+		$('#username').html = "";
+		$(gameOver).removeClass('visible');
+		$(gameOver).addClass('hidden');
+		$(leaderBoard).removeClass('hidden');
+		$(leaderBoard).addClass('visible');
+		$('#number-of-lives').html('8');
+		$('#number-of-points').html('0');
+	};
+
+	// Restart Button Click Handler
+	restartButton.onclick = function() {
+		var ship = window.Asteroids.GameView.ship;
+		if (ship) {
+			ship.reset();
+		}
+	};
+</script>
+</body>
+</html>
+
+

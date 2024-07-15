@@ -1,0 +1,12 @@
+==README
+
+Welcome to D&D cat game
+
+
+
+Based on the classic Asteroids game this is a 100% JavaScript based game played in the browser using HTML5 Canvas drawing. 
+
+Some highlights;
+- Prototypal inheritance to DRY code between the different moving objects
+- Calculates movement, direction and collision using vector algebra
+- Parse.com integration to save highscores efficiently in the cloud
